@@ -1,0 +1,22 @@
+{
+  "_id": "GENERAL",
+  "t": "c",
+  "name": "general",
+  "default": true,
+  "_updatedAt": "2019-06-11T21:40:27.184Z",
+  "lastMessage": {
+    "_id": "z9yT36Ku6ntprBKvp",
+    "rid": "GENERAL",
+    "msg": "hello",
+    "ts": "2019-06-11T21:40:27.125Z",
+    "u": {
+      "_id": "huNm2s3vGBWesFLfN",
+      "username": "some.user",
+      "name": "Some User"
+    },
+    "unread": true,
+    "_updatedAt": "2019-06-11T21:40:27.153Z",
+    "mentions": [],
+    "channels": []
+  }
+}
