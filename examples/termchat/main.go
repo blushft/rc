@@ -8,7 +8,7 @@ import (
 
 func clientOpts() []rc.ClientOption {
 	return []rc.ClientOption{
-		rc.ServerURL("https://chat.dev.rpxapps.com"),
+		rc.ServerURL("http://localhost:3000"),
 		rc.CredFromJson("../../token.json"),
 		rc.Debug(true),
 		rc.Realtime(true),
