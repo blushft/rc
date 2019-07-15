@@ -11,7 +11,10 @@ func clientOpts() []rc.ClientOption {
 		rc.ServerURL("http://localhost:3000"),
 		rc.CredFromJson("../../token.json"),
 		rc.Debug(true),
-		rc.Realtime(true),
+		rc.StreamOptions(
+			rc.RoomSubscription("__my_messages__"),
+			rc.EventSubscription(rc.SubNotifyLogged, rc.NotifyUserStatus),
+		),
 	}
 }
 
@@ -26,24 +29,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	subs, err := client.SubscribeToRoomMessages("__my_messages__")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	for {
 		select {
-		case m := <-subs.Updates:
-			msgs, ok := m.([]rc.RoomMessage)
-			if !ok {
-				log.Fatalf("this isn't messages? %v", m)
-			}
-			log.Printf("%d messages\n", len(msgs))
-			for _, msg := range msgs {
+		case e := <-client.EventStream():
+			log.Printf("Event: %s\n", e.Event)
+			log.Printf("Args: %#v", e.Args)
+		case m := <-client.MessageStream():
+			log.Printf("%d messages\n", len(m))
+			for _, msg := range m {
 				log.Printf("From: %s - %s\n", msg.User.Username, msg.Msg)
 			}
-		case serr := <-subs.Errors:
+
+		case serr := <-client.StreamErrors():
 			log.Fatal(serr)
+		default:
 		}
 	}
 }
