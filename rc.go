@@ -3,10 +3,14 @@ package rc
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 
 	"go.uber.org/zap"
 )
 
+// Client struct contains all methods for interacting with the Rocket.Chat api.
+// Client is opinionated about realtime vs syncronous api calls and will use the
+// appropriate method (rest vs ddp)
 type Client struct {
 	url string
 
@@ -18,30 +22,42 @@ type Client struct {
 	c        *restClient
 	d        *ddpClient
 
+	strOpts []StreamOption
+
 	cred *Credential
 	log  *zap.SugaredLogger
 }
 
+// ClientOption is a functional argument that sets optional values on Client
 type ClientOption func(*Client)
 
+// Debug sets Client in debug logging mode
 func Debug(d bool) ClientOption {
 	return func(c *Client) {
 		c.debug = d
 	}
 }
 
-func Realtime(b bool) ClientOption {
+// Realtime specifies Client should use ddp for all interaction
+func StreamOptions(opts ...StreamOption) ClientOption {
 	return func(c *Client) {
-		c.realtime = b
+		c.realtime = true
+		c.strOpts = opts
 	}
 }
 
+// ServerURL sets the server URL for Client
+// If unset, Client will use the value in $RC_SERVER_URL and fall back to
+// http://localhost:3000
 func ServerURL(u string) ClientOption {
 	return func(c *Client) {
 		c.url = u
 	}
 }
 
+// Credentials sets Client username and password.
+// If unset, Client will use values from $RC_USERNAME and $RC_PASSWORD.
+// Client will prefer a token over credentials if available.
 func Credentials(user, pass string) ClientOption {
 	return func(c *Client) {
 		c.cred.Username = user
@@ -81,7 +97,7 @@ func Anonymous(b bool) ClientOption {
 
 func New(options ...ClientOption) *Client {
 	c := &Client{
-		url:  "http://localhost:3000",
+		url:  getURL(),
 		cred: &Credential{},
 	}
 
@@ -105,7 +121,7 @@ func (c *Client) Connect() error {
 	}
 
 	if c.realtime {
-		ddp, err := newDDPClient(c.url, c.debug, c.log.Named("ddp"))
+		ddp, err := newDDPClient(c.url, c.debug, c.log.Named("ddp"), c.strOpts...)
 		if err != nil {
 			return err
 		}
@@ -120,7 +136,7 @@ func (c *Client) Connect() error {
 	if c.cred.tokenReady() {
 		c.c.setAuthHeader(c.cred.ID, c.cred.Token)
 		if c.realtime {
-			if err := c.ResumeRT(); err != nil {
+			if err := c.Resume(); err != nil {
 				return err
 			}
 		}
@@ -136,6 +152,14 @@ func (c *Client) Connect() error {
 	}
 
 	return nil
+}
+
+func getURL() string {
+	u := os.Getenv(rcURL)
+	if u == "" {
+		return "http://localhost:3000"
+	}
+	return u
 }
 
 func buildLogger(debug bool) *zap.Logger {

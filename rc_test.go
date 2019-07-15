@@ -11,7 +11,9 @@ func clientOpts() []ClientOption {
 		ServerURL("http://localhost:3000"),
 		CredFromJson("./token.json"),
 		//Debug(true),
-		Realtime(true),
+		StreamOptions(
+			EventSubscription(SubNotifyAll, NotifyRolesChange),
+		),
 	}
 }
 

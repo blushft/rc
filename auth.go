@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-const (
-	rcUserEnv  = "RC_USERNAME"
-	rcPassEnv  = "RC_PASSWORD"
-	rcTokenEnv = "RC_TOKEN"
-	rcIDEnv    = "RC_USERID"
-)
-
 type Credential struct {
 	Username string    `json:"username,omitempty"`
 	Password string    `json:"password,omitempty"`
@@ -80,20 +73,19 @@ func (c *Client) Login() error {
 	c.c.setAuthHeader(data.UserID, data.Token)
 
 	if c.realtime {
-		if err := c.ResumeRT(); err != nil {
+		if err := c.Resume(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *Client) ResumeRT() error {
+func (c *Client) Resume() error {
 	ld := ResumeLogin{
 		Token: c.cred.Token,
 	}
-	if _, err := c.d.call("login", ld); err != nil {
+	if err := c.d.Resume(ld); err != nil {
 		return err
 	}
-
 	return nil
 }

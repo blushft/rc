@@ -1,0 +1,23 @@
+{
+    "integration": {
+        "type": "webhook-outgoing",
+        "name": "Testing via REST API",
+        "enabled": false,
+        "username": "rocket.cat",
+        "event": "sendMessage",
+        "urls": [
+            "http://text2gif.guggy.com/guggify"
+        ],
+        "scriptEnabled": false,
+        "userId": "rocket.cat",
+        "channel": [],
+        "_createdAt": "2017-01-06T13:23:46.018Z",
+        "_createdBy": {
+            "username": "graywolf336",
+            "_id": "aobEdbYhXfu5hkeqG"
+        },
+        "_updatedAt": "2017-01-06T13:23:46.018Z",
+        "_id": "3aazpZ2WzoBP8msi9"
+    },
+    "success": true
+}

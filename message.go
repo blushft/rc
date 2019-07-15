@@ -1,11 +1,7 @@
 package rc
 
 import (
-	"fmt"
 	"time"
-
-	"github.com/gopackage/ddp"
-	"github.com/mitchellh/mapstructure"
 )
 
 type msgEnv struct {
@@ -86,39 +82,4 @@ func (c *Client) SendMessage(msg Message) (*MessageResult, error) {
 		return nil, err
 	}
 	return mres, nil
-}
-
-func (c *Client) SubscribeToRoomMessages(roomID string) (*SubChannel, error) {
-	err := c.d.ddp.Sub("stream-room-messages", roomID, true)
-	if err != nil {
-		return nil, err
-	}
-
-	fn := func(u ddp.Update) (interface{}, error) {
-		msgs := []RoomMessage{}
-		m, ok := u["args"]
-		if !ok {
-			return nil, fmt.Errorf("unexpected args: %v", u)
-		}
-		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-			WeaklyTypedInput: true,
-			TagName:          "json",
-			Result:           &msgs,
-		})
-		if err != nil {
-			return nil, err
-		}
-		err = decoder.Decode(m)
-		if err != nil {
-			return nil, err
-		}
-		return msgs, nil
-	}
-
-	list, sub := c.NewUpdateListener(fn)
-
-	c.d.ddp.CollectionByName("stream-room-messages").
-		AddUpdateListener(list)
-
-	return sub, nil
 }

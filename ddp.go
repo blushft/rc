@@ -8,14 +8,15 @@ import (
 )
 
 type ddpClient struct {
-	ddp *ddp.Client
+	ddp     *ddp.Client
+	streams *streams
 
 	server string
 	debug  bool
 	log    *zap.SugaredLogger
 }
 
-func newDDPClient(server string, debug bool, logger *zap.SugaredLogger) (*ddpClient, error) {
+func newDDPClient(server string, debug bool, logger *zap.SugaredLogger, opts ...StreamOption) (*ddpClient, error) {
 	urlVals, err := url.Parse(server)
 	if err != nil {
 		return nil, err
@@ -37,18 +38,33 @@ func newDDPClient(server string, debug bool, logger *zap.SugaredLogger) (*ddpCli
 		d.SetSocketLogActive(true)
 	}
 
+	str, err := newStreams(opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := d.Connect(); err != nil {
 		return nil, err
 	}
 
 	client := &ddpClient{
-		ddp:    d,
-		log:    logger,
-		server: server,
-		debug:  debug,
+		ddp:     d,
+		log:     logger,
+		server:  server,
+		streams: str,
+		debug:   debug,
 	}
 
 	return client, nil
+}
+
+func (d *ddpClient) Resume(ld ResumeLogin) error {
+	if _, err := d.call("login", ld); err != nil {
+		return err
+	}
+
+	d.streams.runStreams(d.ddp)
+	return nil
 }
 
 func (d *ddpClient) Reconnect() {
@@ -63,7 +79,19 @@ func (d *ddpClient) call(method string, args ...interface{}) (interface{}, error
 	return d.ddp.Call(method, args...)
 }
 
-func (c *Client) NewUpdateListener(fn func(ddp.Update) (interface{}, error)) (ddp.UpdateListener, *SubChannel) {
+func (c *Client) MessageStream() <-chan []RoomMessage {
+	return c.d.streams.allMsgs
+}
+
+func (c *Client) EventStream() <-chan *StreamEvent {
+	return c.d.streams.allEvts
+}
+
+func (c *Client) StreamErrors() <-chan error {
+	return c.d.streams.allErrs
+}
+
+func NewUpdateListener(fn func(ddp.Update) (interface{}, error)) (ddp.UpdateListener, *SubChannel) {
 	u := make(chan interface{}, 10)
 	e := make(chan error, 10)
 
