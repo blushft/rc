@@ -1,6 +1,7 @@
 package rc
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"time"
@@ -63,7 +64,13 @@ type ResumeLogin struct {
 
 func (c *Client) Login() error {
 	resp := &LoginResponse{}
-	if err := c.c.postJSON("/login", StandardLogin{c.cred.Username, c.cred.Password}).JSON(&resp); err != nil {
+	result := c.c.postJSON("/login", StandardLogin{c.cred.Username, c.cred.Password})
+
+	if result.StatusCode() != 200 {
+		return fmt.Errorf("Error logging in. Response: %s", string(result.Body()))
+	}
+
+	if err := result.JSON(&resp); err != nil {
 		return err
 	}
 	data := resp.Data
